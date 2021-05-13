@@ -1,0 +1,68 @@
+version: '3.8'
+
+# Shared network
+networks:
+  website:
+
+services:
+
+  # Nginx - Service
+  nginx:
+    image: nginx:stable-alpine
+    container_name: nginx
+    restart: unless-stopped
+    networks:
+      - website
+    ports:
+      - 80:80
+    depends_on:
+      - php
+      - mariadb
+    volumes:
+      - ../:/var/www/html
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+
+  # PHP-fpm - Service
+  php:
+    build:
+      context: .
+      dockerfile: php/Dockerfile
+    container_name: php
+    restart: unless-stopped
+    networks:
+      - website
+    ports:
+      - 9000:9000
+    volumes:
+      - ../:/var/www/html
+
+  # MariaDB - Service
+  mariadb:
+    image: mariadb:latest
+    container_name: mariadb
+    restart: always
+    networks:
+      - website
+    ports:
+      - 3306:3306
+    volumes:
+      - ../database/mariadb:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: simplewebsite
+      MYSQL_USER: admin
+      MYSQL_PASSWORD: pass
+
+  # PhpMyAdmin - Service
+  phpma:
+    image: phpmyadmin:latest
+    container_name: phpma
+    restart: always
+    networks:
+      - website
+    ports:
+      - 8080:80
+    depends_on:
+      - mariadb
+    environment:
+      PMA_HOST: mariadb
